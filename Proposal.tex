@@ -1,0 +1,661 @@
+\documentclass[12pt]{article}
+
+\usepackage{wrapfig}
+\usepackage{array}
+\usepackage[inline]{trackchanges}
+\usepackage{dcolumn}
+\usepackage{subfigure}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{abbrevs}
+\usepackage{url}
+\usepackage{flushend}
+\usepackage{amsmath}
+\usepackage{apacite}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+
+
+
+\usepackage{graphicx}
+%extended enumerate, such as \begin{compactenum}
+\usepackage{paralist}
+\usepackage{float}
+%\usepackage{cite} %Sorts the citations in the brackets
+%for easy quotations: \enquote{text}
+\usepackage{csquotes}
+\usepackage[T1]{fontenc}
+%enable margin kerning
+\usepackage{microtype}
+\usepackage[inline]{trackchanges}
+\usepackage{booktabs,caption}
+%better font, similar to the default springer font
+%cfr-lm is preferred over lmodern. Reasoning at http://tex.stackexchange.com/a/247543/9075
+
+\usepackage[math]{blindtext}
+\usepackage{parskip}
+
+\begin{document}
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+
+\center % Center everything on the page
+ 
+%----------------------------------------------------------------------------------------
+%	HEADING SECTIONS
+%----------------------------------------------------------------------------------------
+
+\textsc{\LARGE \'Ecole Polytechnique de Montr\'eal }\\[1.5cm] % Name of your university/college
+\textsc{\Large D\'epartement de G\'enie Informatique et G\'enie Logiciel}\\[0.5cm] % Major heading such as course name
+\textsc{\large Research Proposal}\\[0.5cm] % Minor heading such as course title
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\HRule \\[0.4cm]
+{ \huge \bfseries Refinement of Q-matrix with an ensemble learning}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+ 
+%----------------------------------------------------------------------------------------
+%	AUTHOR SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+\textsc{Sein Minn} % Your name
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisor:} \\
+Michel  \textsc{Desmarais} % Supervisor's Name
+\end{flushright}
+\end{minipage}\\[4cm]
+
+% If you don't want a supervisor, uncomment the two lines below and remove the section above
+%\Large \emph{Author:}\\
+%John \textsc{Smith}\\[3cm] % Your name
+
+%----------------------------------------------------------------------------------------
+%	DATE SECTION
+%----------------------------------------------------------------------------------------
+
+{\large \today}\\[3cm] % Date, change the \today to a set date if you want to be precise
+
+%----------------------------------------------------------------------------------------
+%	LOGO SECTION
+%----------------------------------------------------------------------------------------
+
+%\includegraphics{Logo}\\[1cm] % Include a department/university logo - this will require the graphicx package
+ 
+%----------------------------------------------------------------------------------------
+
+\vfill % Fill the rest of the page with whitespace
+
+\end{titlepage}
+
+
+\begin{abstract}
+There are numerous algorithms and tools to help an expert map exercises and tasks to underlying skills. The last decade has witnessed a wealth of data driven approaches aiming to refine expert-defined
+mappings of tasks to skill(Q-matrix).Q-matrix refinement plays an important role in Educational Data Mining. In this proposal, we reviewed three existing well known algorithms for Q-matrix validation: MinRSS, MaxDiff and matrix factorization technique, each apply different techniques and they are complementary to each others. Previous research paper combines these three techniques to improve over the performance of existing refinement methods for the detection and correction of misspecified q-matrix. In there, a two steps method for Q-matrix refinement was propsed. That method uses three existing methods in first step and, then applies classification to provide more reliable q-vectors for Q-matrix in second step. This classifier is trained by huge amount permutated Q-matrices. Whereas previous research use traditional classification algorithms those are working at the level of individual mappings, we introduce an approach based on a multi-label classification algorithm that is trained on the mapping of a task to all skills simultaneously. Classifier will take the responsibility to predict the more reliable q-vector by using q-vectors proposed from three data driven methods as features. A data filtering technique was also proposed to provide better performance. A comparison of well known data driven approaches, state-of-the-art ensemble techniques based on traditional classification and proposed methods were conducted in both synthetic data and real data. Simulation studies shown that proposed methods outperform the state-of-the-art ensemble techniques for Q-matrix refinement.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+  Analyzing the student performance in Intelligent tutoring system is mostly rely on both accessing the skills to perform tasks and what skills a student have. In the case of defining what these skills are, These can be deeply understanding of abstract, factual knowledge, problem solving abilities, practice at recognizing problems, patterns and situations etc. In designing the intelligent learning environment, it should be focused on particular subset of these skills to evaluate the student performance efficiently. Accessing these skills are non trivial and error prone process. In this proposal, we are going to discuss the Q-matrix  refinement, where Q-matrix is the mapping of skills required to perform tasks. Q-matrix validation has become a central problem in Educational Data Mining and E-learning since last decade. A Q-matrix, as proposed by Tatsuoka \cite{tatsuoka1983rule}, is a term commonly used in the literature of psychometric and knowledge engineering. Typically, it is a binary matrix which shows a relationship between items and their required latent attributes. In learning analytic problem, items or tasks are questions proposed to students, and latent attributes are skills needed to answer these questions. Usually, Q-matrices are extracted by a human domain experts. Misspecification in Q-matrix will result in erroneous diagnosis of students knowledge states \cite{rupp2008effects,madison2015effects}. Therefore, validating a Q-matrix would be highly useful and important in providing accurate and effective accessing and predicting of student performance. 
+	\subsection{Q-matrix in EDM}
+ EDM (Educational Data Mining) is the effectively usage of data mining, machine learning and statistics techniques in data from educational field to provide the better solution in analysis of student knowledge and behavior to the designer of learning environment. The main sources of these data come from real school teaching activities and online tutoring systems. For EDM, typical applications are \cite{baker2009state}: 
+\begin{itemize}
+	\item{Improve student model}
+	\item{Improve domain model}
+	\item{Study pedagogical support}
+	\item{Refine education theory}
+\end{itemize}
+
+  Validating Q-matrix can be seen as improving the domain model statistically. As we mentioned above, Q-matrix, whether we define skills behind tasks, or vice versa, tasks for a given set of skills, it is non trivial and error prone processes.Therefore, tools to help a tutor, or a designer of a learning environment, validate a given mapping of skills to tasks statistically would be highly valuable. Let us refer to this endeavor as the problem of Q-matrix refinement, where the Q-matrix represents the mapping of tasks to skills.
+
+\subsection{Models}
+A number of models for student performance assessment consists of  a student profile matrix and a Q-matrix, that come from psychometric and able to provide feedback to students' learning progress, these are called Diagnostic Classification Models (DCM) \cite{templin2010diagnostic}. Compared to traditional dimensional item response theory with continuous latent attributes, DCM apply discrete scale in latent attributes. These attribute pattern are binary vector with 1 indicating  mastery of that latent attributes and 0 otherwise. These latent pattern provide the knowledge feedback of student to teachers for helping with designing their remedial instruction. Alternatively, they are also called Cognitive Diagnosis Models \cite{templin2006measurement}, Cognitive Psychometric Models \cite{rupp2007answer}, Latent Response Models \cite{maris1995psychometric}, Restricted Latent Class Models \cite{haertel1989using}, Multiple Classification Latent Class Models \cite{maris1999estimating}, Structured Located Latent Class Models \cite{xu2008fitting}, Structured Item Response Models \cite{rupp2007cognitive}.These models are relatively similar. In this proposal, we will use the term Diagnostic Classification Models (DCMs) to embrace the whole family.Generally,we can assumed DCMs belong to Latent Variable Models (LVM). For LVM, there are only two type of variables, the manifest variable (Observed variable) and latent variable (Unobserved variable).
+
+
+
+In DCMs, only models with manifest variables and latent discrete variables are considered, that is, statistically they belong to Latent Class Analysis (LCA). A varieties of DCMs has been proposed over the past decade. DCMs can be classified into two categories, non-compensatory and compensatory, depending on the nature of the models. Non-compensatory DCM models presume that each item requires a particular set of skills and lacking any one of them would make the student fail to answer it correctly. This kind of models are also called deterministic-input noisy-and (DINA) model\cite{de2009dina}. In contrast, there is well-known compensatory analogues are the deterministic input, noisy-or-gate (DINO)\cite{templin2006measurement}, where skills in models are not decisive but they each contribute to the chances of success. Generalizing DCMs can be done by combing all these models, for instance,  generalized DINA models (G-DINA) \cite{de2011generalized}. Regardless of their formulation, all these above models share the general idea of relating each item to single tor multiple latent attributes,we called Q-matrix.
+\subsubsection{Compensatory model}
+
+ In compensatory DCMs, the lack of a some attribute can be
+compensated by the presence of another attribute. Such models are usually
+used for modeling the responses to a psychological scale instead of an achievement test.
+For example, in a real study to access the prevalence of pathological gambling \cite{templin2010diagnostic}, an item "Gambling got me into trouble over my finance
+situation." which may require the presence of two attributes as follows:
+\begin{itemize}
+	\item[attribute1:] brakes the legal law such as forgery, fraud, theft, or embezzlement to finance gambling.
+	\item[attriubte2:] depends on money provided by others to relieve a desiderata situation caused by gambling.	
+\end{itemize}
+
+ 
+In which, an respondent satisfied at least one of above attributes, it can be considered as completed that item undoubtedly. So in this case, we only need one attribute is present for a respondent to have high probability of occurrence to the item.In this section, the most widely discussed compensatory DCM, the deterministic input, noisy-or-gate (DINO) model \cite{templin2006measurement} will be introduced. 
+
+The DINO model is a simple compensatory DCM. it has two parameters at the item level, the slip and guess parameters. Respondents have high probability of providing a correct answer with at least one of the
+required skills instead of all of the required skills.
+
+Upon the given response matrix representing respondents providing a correct response to item or not with binary value, we are going to assess consisting of a domain of skills or attributes for items. Consider an assessment consisting of $I$ items measuring a domain of $K$ attributes
+or skills. Let $Y_{ij} , i=1,2,..., I, j=1,2,...,J,$ be a binary 0/1 response for item $i$ by respondent
+$j$ with 1 representing the respondent providing a correct response to the item and 0
+otherwise. The attribute pattern for respondent $j, \alpha_j$ is a vector of length $K$ with binary 0/1
+elements with 1 meaning the respondent has mastered the attribute and 0 otherwise. For
+a test requiring $K$ attributes, respondents can be classified into one of the $2^K$ possible
+attribute patterns
+
+$$P (X_{ij}=1|\xi_{ij})=(1-s_i)^{\xi_{ij}}g_i^{1-\xi_{ij}}$$  
+
+where 
+
+$$\xi_{ij}=1 - \prod\limits_{i=1}^I (1-\alpha_{jk})^{q_{ik}}$$
+$$ s_i= P(X_{ij}=0|\xi{ij}=1)-"slip" parameter $$
+$$ g_i= P(X_{ij}=1|\xi{ij}=0)-"guess" parameter $$
+  
+Based on the formula mentioned above, item $i$ is correct with two possible probabilities. If a respondent has mastered none of the required attributes, his/her is still
+likely to provide a correct answer via guessing, so the correct response probability in this
+case is $g_i$. When a respondent has mastered at least one of the required attributes, the
+correct response probability is $1−s_i$ . The DINO model can be estimated using
+MCMC\cite{templin2006measurement} or as a constrained log-linear model with latent
+classes.
+
+\subsubsection{Non-compensatory model}
+ Non-compensatory DCMs, where compensation from one skill to another skills are not allowed in this model. For instance, model considered that requires two elementary math skills:multiplication and subtracting to solve the math problem of "5*3-9". In this model, The respondent can only complete his task correctly under the condition with having mastery of of both skills if there is no split and guess assumption. 
+ 
+ The most popular non-compensatory DCM is the DINA model.This model is analogous to the DINO model. It divides the respondents into two mastery groups of each item: respondents mastered all the required attributes and those lacked at least one of them. Similar to DINO model, DINA model also takes into account the possibility that a respondent with all required skills misses an item and possibility through careless errors (applying slip parameter) and the possibility that respondent who lack at least one of the required skills gives a correct response by guessing (applying guess parameter).For the DINA model, 
+ 
+  
+$$P (X_{ij}=1|\xi_{ij})=(1-s_i)^{\xi_{ij}}g_i^{1-\xi_{ij}}$$  
+
+where 
+
+$$\xi_{ij}=\prod\limits_{i=1}^I \alpha_{jk}^{q_{ik}}$$
+$$ s_i= P(X_{ij}=0|\xi{ij}=1)-"slip" parameter $$
+$$ g_i= P(X_{ij}=1|\xi{ij}=0)-"guess" parameter $$
+
+
+
+
+  
+\parskip = \baselineskip
+
+
+Here $X_{ij}$ is the response outcome of respondent $j$ to item $i$, $\alpha$ is the attribute pattern class that the respondent belongs to. Response outcome is binary: $\{0,1\}$. When $\xi_{ij}=1$, the respondent j has mastered all the required skills and 0 otherwise. 
+
+DINA model is the only model considered in this proposal.  
+  
+\subsection{some ITS's student models}
+ There are some student modeling methods:Bayesian Knowledge Tracing(BKT), Factor Model(FM)\cite{cen2006learning,cen2008comparing,pavlik2009performance,chi2011instructional}, Recurrent Neural Networks (RNNs) \cite{piech2015deep}. All of these models use a Q-matrix to construct a cognitive model based upon these observed behaviors and to apply the models to make predictions. But we are not going to discuss performances of these models in this proposal.
+\subsubsection{Bayesian Knowledge Tracing (BKT) }
+ The most popular student model, BKT was proposed \cite{corbett1994knowledge} to build the model for student learning process and employs latent binary variables to represent student knowledge states on understanding of problems. It was initially proposed with assumption that once skill is learned, it will never be forgotten. But, proplem difficulty, prior knowledge of students, and slip and guess parameters are also considered for more personalized assessment in later \cite{d2008more,pardos2011kt,yudelson2013individualized}.To compute the probability of student $i$ applying the skill $k$ correctly on an upcoming practice opportunity one uses following equations: 
+ $$ p(L_1)_i^k = p(L_0)^k_{'}$$  
+ $$ p(L_{t+1}|obs=correct)_i^k = \frac{p(L_t)_i^k . (1-p(S)^k)}{p(L_t)_i^k . (1-p(S)^k)+(1-p(L_t)_i^k). p(G)^{k'}}$$
+$$ p(L_{t+1}|obs=wrong)_i^k = \frac{p(L_t)_i^k . (p(S)^k)}{p(L_t)_i^k . (p(S)^k)+(1-p(L_t)_i^k). (1-p(G)^{k})^{'}}$$
+$$p(L_{t+1})_i^k = p(L_{t+1}|obs)_i^k +(1-p(L_{t+1}|obs)_i^k) .p(T)^k_{'}$$
+$$p(C_{t+1})_i^k = p(L_t)_i^k . (1-p(S)^k)+(1-p(L_t)_u^k) . p(G)^k$$
+
+where BKT use four probability paramaters: prior knowledge of student $i$; $p(L_0)$, state transition (unknown to known) $p(T)$, slip $p(S)$, guess $p(G)$ per skill. BKT models are usually explored by using expectation maximization method, conjugate gradient search or discretiezed brute-force search \cite{yudelson2013individualized}.  
+
+
+
+\subsubsection{Factor Models (FMs) }
+   The idea of Additive Factor Model (AFM) originally came from \cite{draney1995measurement} and introduced into educational field by \cite{cen2006learning,cen2008comparing}.It is a logistic regression model that defines the log-odds of a student $i$ completing an item $j$ correctly to be a linear function of several covariates. Here $P_{ij}$ is probability of a student completing a item correctly, $N_{ik}$ is the prior learning opportunity counts. AFM models contain three types of parameters: student parameters $\theta_i$,skill parameters $\beta_k$, and learning rates $\gamma_k$. While AFM consider the frequency of prior practice of skills, it assumes that all students accumulate skills in the same manner and ignores the correctness of their individual responses.
+
+$$
+  P_{ij}= p(X_{ij}=1|\theta_i,\beta_k,\gamma_k)=  \frac{exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+\gamma_k N_{ik}))) )}{1+exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+\gamma_k N_{ik}))) )}
+$$ 
+ where $q_{jk}$ represents  item $j$ uses skill $k$ with binary value.
+ There is a connection with Logistic Regression by modeling success as a Bernoulli distribution with the probability of $P_{ij}$, the logit of which is determined by a linear combination of student proficiency, mastery of skill, and learning rate in AFM.
+There are another connection with Item Response Theory. Without the learning covariates in AFM reduces to the Linear Logistic Model with skills as the item attributes. AFM was inititally propsed with single skill and applied with conjuctive-skills(as non-compensatory model) in later \cite{chi2011instructional}.   
+
+ \iffalse As like AFM, Performnce Factor Model (PFM) also considers student proficiency, mastery of skill. But it split learning rate into the succeseful $S_{ik}$ or failure $F_{ik}$ of individual learning skill of student.\fi 
+ Performnce Factor Model (PFM) was initally proposed without $\theta_i$, it is possible to include or exclude these student parameters \cite{pavlik2009performance}. PFM additionaly apply: the benefit of students' prior successful applications of the skill $S_{ik}$   and the benefit of prior previous failures $F_{ik}$ with parameters: $\mu_k$ and $\rho_k$.
+ $$
+  P_{ij}= p(X_{ij}=1|\theta_i,\beta_k,\mu_k,\rho_k)=  \frac{exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+(\mu_k S_{ik}+\rho_k F_{ik})))) )}{1+exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+(\mu_k S_{ik}+\rho_k F_{ik}))) )}
+$$
+PFM can also be applied with sigle skill or conjuctive skill\cite{gong2010comparing,chi2011instructional}. 
+ 
+
+ Nowadays, ITS became more interactive with students. It also provides instructional interventions to train on specific skills by telling them the next step. \cite{chi2011instructional} assumes tell steps  can be counted as a type of learning opportunity. As an adaptation to PFM, Instructional Factor Model (IFM) introduce a new feature $T_{ik}$ with parameter $\nu_k$  to represent the tells together with the success or failure counts of skills. 
+  
+
+$$
+  P_{ij}= p(X_{ij}=1|\theta_i,\beta_k,\mu_k,\rho_k,\nu_k)=  \frac{exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+(\mu_k S_{ik}+\rho_k F_{ik}+\nu_k T_{ik})))) )}{1+exp(\theta_i+ \sum_{k=1}^{K} q_{jk} (\beta_k+(\mu_k S_{ik}+\rho_k F_{ik}+\nu_k T_{ik}))) )}
+$$  
+  These three student models are the three variants of Factor Model for student performance prediction. 
+\subsubsection{Recurrent Neural Networks (RNNs)}
+ Recurrent neural networks are a family of flexible dynamic models which connect artificial neurons over time. The propagation of information is recursive in that hidden neurons evolve based on both the input to the system and on their previous activation\cite{williams1989learning}. They are competitive and state-of-the-art for several time series tasks, and very popular in application of speech recognition, translation, and image processing. RNNs do mapping between input sequence of vectors $x_1,x_2,..x_T$ and output sequence of vectors $y_1,y_2,..y_T$ by computing a sequence of hidden state $h_1,h_2,..h_T$. These hidden states can be seen as encoded relevant information from past observations and will be applied for future predicitons. 
+ 
+ $$h_t = tanh (W_{hx} x_t + W_{hh} h_{t-1} + b_h),$$
+ $$ y_t= \sigma (W_{yh} h_t + b_y)$$
+
+where both $tanh$ and the sigmoid function; $\sigma ( \cdotp) $, are applied elementwise. The model is parameterized by an input weight matrix $W_{hx}$, recurrent weight matrix $W_{hh}$, initial state $h_0$, and readout weight matrix $W_{yh}$. Biases for latent and readout units are given by $b_h $and $b_y$. Since RNNs only accept fixed
+length of vectors as the input, it needs one-hot encoding to convert student performance into fixed length of vectors whose all elements are 0s except for a single 1. The single 1 in the vector indicates two things: which skill was answered and if the skill was
+answered correctly.\\
+ Long Short Term Memory (LSTM) networks, a popular type of RNN was introduced into ITS to predict a student's future performance based on
+their past activity by \cite{piech2015deep}. It is called Deep Knowledge Tracing model. DKT model, at any time step, It uses student performance on a single problem of the skill that the student is currently working on as input. Data representation method used in DKT is totally different wiht those used in two other models.   
+  
+  
+ 
+\subsection{Q-matrix validation problem}
+As mentioned above, Q-matrices are generally expert defined and prone to errors. Thus, the proposed question is, if the Q-matrix is perturbated or wrongly given, how can we recover or validate it with empirical data? In other words, we want to find an algorithm which takes the respondent matrix and the perturbated Q-matrix as inputs, and outputs a correct Q-matrix based on test data.
+
+Two main types of test data are available for Q-matrix validation. The first one is static data. Typical examples is a snap shot test result of a specific course like mathematics. The data form is usually a binary matrix, which is called item response matrix. It represents rows as students and columns as items respectively. The domain model and student model behind this item response matrix are usually represented by two matrices, which we call them Q-matrix and profile matrix respectively. In this type of dataset, there is only one Q-matrix and one profile matrix.
+
+\parskip = \baselineskip 
+The second kind of datasets is dynamic. It usually came from Tutoring Systems. In this case, students often try the same question for several times, or learn changing on subsets of skills through a long time period. The system records all behavior of students throughout the whole learning phase. The data is presented as a table but can be transformed into a tensor, or in other way, a time-varying matrix. Q-matrix is consistent in both static or dynamic data but the profile matrix of students are changing through time because students are always learning and improving their skills throughout their study life.
+
+\parskip = \baselineskip
+In this PhD proposal, only the first type of datasets was investigated.
+
+We review various algorithms for Q-matrix validation below. Besides, two ways to improve the matrix factorization techniques are proposed. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Existing data driven algorithms for Q-matrix validation}
+
+For all algorithms, there are three matrices involved. First is the directly observed response matrix looking like $R$ below for 4 students(respondents) and 9 questions(items).
+$$R=\begin{pmatrix}
+0\quad 0\quad 0\quad 0\quad 0\quad 1\quad 0\quad 0\quad 0\\
+1\quad 0\quad 0\quad 1\quad 0\quad 1\quad 0\quad 0\quad 0\\
+1\quad 1\quad 1\quad 1\quad 1\quad 1\quad 1\quad 1\quad 1\\
+0\quad 1\quad 0\quad 0\quad 1\quad 1\quad 0\quad 1\quad 1\\
+\end{pmatrix}$$
+The second one is Q-matrix, usually expert-given, looking like $Q$ below for 9 items and 3 latent skills
+$$Q=\begin{pmatrix}
+1\quad 1\quad 0\\
+0\quad 1\quad 1\\
+1\quad 0\quad 1\\
+1\quad 0\quad 0\\
+0\quad 0\quad 1\\
+0\quad 1\quad 0\\
+1\quad 1\quad 1\\
+0\quad 1\quad 1\\
+0\quad 1\quad 1\\
+\end{pmatrix}$$
+And the last matrix is the profile matrix $A$ which is usually unknown and what educators want to diagnose. For the 4 students above, it might look like
+$$A=\begin{pmatrix}
+0\quad 1\quad 0\\
+1\quad 1\quad 0\\
+1\quad 1\quad 1\\
+0\quad 1\quad 1\\
+\end{pmatrix}$$
+
+There are plenty of literature on how to find the knowledge states of students, or classify the students or cognitive diagnose in other terms, that is also how CM gets its name. In fact they are basically looking for the profile matrix $A$. However, not too much research were done for Q-matrix validation and we review three types of single methods and a decision tree based ensemble learning method for it here. 
+
+
+\subsection{MinRSS}
+For a given Q-matrix, there is an ideal response pattern (ideal response vector) for each profile pattern (profile vector). This ideal response pattern only relies on Q-matrix given profile pattern. That is, if there are no slip and guess factors, then the response pattern for every category of student profile is fixed. A natural thought is the real response pattern should not differ much from this ideal response pattern. Then the problem is how to measure the difference between the real pattern and ideal pattern. The most common metric for binary data is Hamming distance, that is
+$$ d_h(r,\eta)=\sum_{j=1}^{J}|r_j-\eta_j|$$
+where $r$ is the real response vector while $\eta$ is the ideal response vector. $J$ is the number of latent skills. \cite{chiu2013nonparametric} considered a more refined metric. The idea is if an item has a smaller variance (or entropy), then it should be given higher weight. The formula is
+$$ d_{\omega h}(r,\eta)=\sum_{j=1}^{J}\frac{1}{\bar{p_j}(1-\bar{p_j})}|r_j-\eta_j|$$
+where $\bar{p_j}$ is the proportion of correct answers of item $j$. Equipped with this metric, we can find the most approximate ideal response matrix and then find the correspondent profile matrix $A$. With these results, a powerful method was proposed to update the Q-matrix\cite{chiu2013statistical}. First, a squared sum of errors for each item $k$ can be computed by
+$$ RSS_k=\sum_{i=1}^{N}(r_{ik}-\eta_{ik})^2$$
+where $N$ is the number of respondents. Then, the item with the highest $RSS$ is chosen to update its correspondent q-vector. All the other possible q-vectors are tested to calculate their $RSS$ and the q-vector giving the lowest $RSS$ is chosen to replace the original one. That is why we name this method minRSS. The Q-matrix is thus changed and the whole process will be repeated but the previous changed q-vector would be crossed out in searching pool in the next round of running. The whole procedure terminates until the $RSS$ for each item no longer changes.
+This method has a consistency property which was shown by \cite{wang2015consistency}. That is, it has good performance under different underlying conjunctive models.
+
+\subsection{MaxDiff}
+Under the setting of DINA model, for every item $j$, there are two model parameters, slip $s_j$ and guess $g_j$. \cite{de2008empirically} proposed that a correctly specified q-vector for item $j$ should maximize the difference of probabilities of correct response between examinees who have all the required attributes and those who do not. Denote the $2^K$ binary vectors defined by the $K$ number of skills as $\alpha_l, l=0,1,..,2^{K}-1$,and let $\alpha_0$ bcorrespond to the null vector $(0,0,...,0)'$ .  That is, $q_j$ is the correct q-vector if 
+$$ q_j=\argmax_{\alpha _l}[P(X_j=1|\xi_{ll'}=1)-P(X_j=1|\xi_{ll'}=0)]=\argmax_{\alpha _l}[\delta_{jl}]$$
+for $l,l'=1,2,..,2^K-1$, where $\xi_{ll'}=\prod_{k=1}^{K}\alpha_{l'k}^{\alpha_{lk}}$ . That is also why we call it maxDiff. An interesting observation is since $P(X_j=1|\xi_{ll'}=1)=1-s_j$ and $P(X_j=1|\xi_{ll'}=0)=g_j$, thus $$q_j=\argmax_{\alpha _l}[1-(s_j+g_j)]$$ 
+that is, maximizing the difference is equivalent to minimize the sum of the slip and guess parameters. A natural idea is to test all q-vectors to find the maximum $\delta_{jl}$ but that is computationally expensive. \cite{de2008empirically} proposed a greedy algorithm that adding skills into q-vector sequentially. First, $\delta_{jl}$ is calculated for all q-vectors which contains only one skill and the one with biggest $\delta_{jl}$ is chosen. Then, $\delta_{jl}$ is calculated for all q-vectors which contains two skills including the previously chosen one. Again the q-vector with biggest $\delta_{jl}$ is chosen. This whole process is repeated until no adding skills increases $\delta_{jl}$. However, this algorithm requires knowing $s_j$ and $g_j$ in advance. For real data, they are calculated by EM (Expectation Maximization) algorithm\cite{de2009dina}.  
+
+
+%\
+
+\subsection{Matrix Factorization}
+Matrix Factorization(MF) is a commonly used technique in Data Mining. The Netflix award-winning algorithm for recommmender system is based on matrix factorization\cite{koren2009matrix,desmarais2013matrix,desmarais2015combining}. In fact, there is a similarity between the Netflix Data and our item response data. They are both categorical but the Netflix data is scaled between 1 to 5 while the item response data is binary in most cases. The Netflix data is a huge sparse data while the item response data is usually complete. However, the purpose for mining these two datasets are different. For the Netflix data we want to make predictions on unobserved data and give recommendations to users based these predictions while for the item response data we want to find right Q-matrix and profile matrix. Nevertheless, MF is still useful in Q-matrix validation\cite{desmarais2014refinement}. 
+
+\parskip = \baselineskip
+Since the influential paper on the applications of NMF in pattern  recognition\cite{lee1999learning}, researchers began to apply this useful techniques in other fields. The use of NMF in EDM can be found in\cite{desmarais2012mapping}.
+
+\parskip = \baselineskip
+Besides NMF, Boolean Matrix Factorization(BMF) is also gaining attentions through years. It exerts stronger restrictions on the factor matrix that each entry needs to be binary.
+
+All these three matrix factorization techniques try to minimize a error function
+$$ f(Q)=||R-A*Q^t||$$
+where $Q$ is a real matrix, positive matrix and binary matrix respectively for MF, NMF and BMF. For BMF, the operator $*$ is replaced by $\odot$ which is the binary product. There are several methods to implement this factorization. In this thesis, only ALS (Alternative Least Square) were used. For ALS, $A$ and $Q$ are fixed alternatively to calculate the other in each iteration. For MF and NMF, the final results are coerced to be binary matrices. 
+
+
+
+
+\section{Proposed Method}
+
+ Each of the three techniques: MinRSS, MaxDiff, and ALSC, apply a substantially different methods from the others to refine a Q-matrix. In that respect, their respective outcome from each method may be complementary, and we can hypothesize that they can be combined to provide a more reliable output than any single one. The main idea is optimize these outcomes from each unsupervised Q-matrix validation method by using supervised learning model that trained by huge amount of all possible Q-matrices. Furthermore, some algorithms are more effective in general, but may not be the best performer in all context.  Defining the features that that allows learning which algorithm provides the most reliable outcome in a given context is another objective of combining these techniques. So we apply ensemble learning based on multi-label classification over each proposed q-vectors and predict more reliable q-vectors for Q-matrices. 
+
+\subsection{Ensemble learning}
+
+Ensemble learning is a method using multiple learning algorithms to obtain better predictive performance. Desmarais et al. proposed a way to combine some techniques mentioned above in the framework of a decision tree \cite{desmarais2015combining}. For each record of the training set, the feature variables are composed of an entry of original Q-matrix and the proposed refined entry by different techniques. The target variable is the correspondent real Q-matrix entry. After training the model with synthetic data, the learned function is applied to map most possible real Q-matrix together with its refined Q-matrix offered by different techniques as the test set. 
+
+ 
+ \begin{figure}
+  \centering
+    \includegraphics[width=100 mm ,scale=0.5]{graph/RP.pdf}
+  \caption{Refinement Procedure of each Q-Matrix~$QM_i$ }\label{fig:RP}
+\end{figure} 
+  In figure \ref{fig:RP}, it shows the genreal idea about refinement process. At First, we peform refinement with three data driven methods: MinRss, MaxDiff, ALSC in Data Generation. After getting propsed outputs from three methods, we transform a data like table \ref{ref:data} and perform preprocessing. Then we classify what is most possible outputs by using proposed outputs as features.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Data transformation and filtering}
+
+
+
+Table~\ref{ref:data} contains an excerpt of data used to train the multi-label skills refinement algorithms. Each line is a record for a single item to skills mapping. The rightmost column contain the true labels. 
+
+\begin{table}[h]
+\centering
+	\begin{tabular}{c|ccccccccc|ccc}	
+\toprule
+\multirow{3}{*}{Items} & \multicolumn{9}{c}{Predicted Outputs skills $s_n$}\\
+\cmidrule{2-9}
+& \multicolumn{3}{c}{ MinRSS } & \multicolumn{3}{c}{MaxDiff}&\multicolumn{3}{c|}{ALSC}& \multicolumn{3}{c}{Real Values} \\ \\
+\cmidrule{2-9}
+& $s_1$ & $s_2$ & $s_3$ & $s_1$ & $s_2$ & $s_3$ & $s_1$ & $s_2$ & $s_3$  & \textbf{$s_1$} & \textbf{$s_2$} & \textbf{$s_3$}\\ \hline
+
+	1 & 1 & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0  & 1 & 1 & 0 \\
+	2 & 0 & 1 & 0 & 0 & 1 & 1 & 0 & 1 & 1 & 0 & 1 & 1 \\
+	3 & 1 & 1 & 1 & 1 & 0 & 1 &1 & 1 & 1 & 1 & 0 & 1\\
+	4 & 1 & 0 & 0 & 1 & 0 & 0 & 1 & 1 & 1 & 1 & 0 & 0 \\
+	5 & 1 & 0 & 1 & 1 & 0 & 1 & 1 & 0 & 1  & 1 & 0 & 1\\
+	... &... &... &... &... &... &... &... &... &... &...\\
+	 \hline\hline
+       
+	\end{tabular}
+
+\caption{Example of the data used for multi-label classification} \label{ref:data} 
+\end{table}
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=100 mm ,scale=0.5]{graph/DSP.pdf}
+  \caption{Example of Data Filtering Process}\label{fig:DSP}
+\end{figure} 
+The idea of data filtering is about proposed vectors poll of three data driven methods would provide some prevision about what are the more likely q-vectors for true Q-matrix. In synthetic data, we have all possible combination of skills for q-vectors in permutated Q-matrices. Synthetic data contains q-vectors more than those in true QM. In real situation, we don't know how many q-vectors are in real true QM. So we tried to guess what are the most potential q-vectors classes form the poll, that contains proposed q-vectors from three data driven techniques in real data. Only those q-vectors classes are considered in training data for classification. As a result, it reduce both time and computational complexities, that might occurred when we train with less likely q-vectors from all permutated Q-matrices.   
+
+
+
+In Figure \ref{fig:DSP}, Once we know what are the proposed Q-vectors from three data driven methods in real data, we perform data filtering in synthetic data that we are going to train. In where, we look for the most potential q-vector classes for training model by counting the frequencies of q-vectors proposed from three data driven techniques in real data. We choose q-vectors with frequencies higher than certain percentage(for eg. we used 5\% in this experiment). Only those most potential q-vectors are kept as classes in synthetic data for training model of multi-label classifiers .This is the most important step of this experiment. It provide better peformace than without filtering. Comparison of results are shown in Figure \ref{fig:oldSAforReal} and \ref{fig:m3SAforReal}  of Appendix. 
+
+
+  
+
+
+
+\subsection{muti-label skills refinement algorithms}
+
+The generality of multi-label problems makes it significantly more complex to solve than traditional single-label (two-class or multi-class) problems. Only a few studies on multi-label learning are reported in the literature, which mainly concern the problems of text categorization, bioinformatics and scene classification. 
+
+Multi-label classification aims to predict a whole vector of labels at once, namely the item skills set in our case. We have a vector of skills for each item in our Q-matrices. So we can transform the proposed outputs of Q-matrices driven from the three refinement techniques into multi-label classification problem and then we make final prediction by using those features.
+
+
+Let us introduce some notation. Given an instance~$\{X_1,X_2,..,X_m\} \in X$ that consist of values $\{x_1,x_2,..,x_m\}$ and its associated label set$\{L_1,L_2,..,L_n\} \in L$, where it have the value of each $l_i$ with discrete values ( 0 or 1). 
+
+
+
+
+ In this study, we use two multi-label classification methods: binary relevance method (Classifier chain method)~\cite{read2011classifier} by using Naive Bayes classifier, and RAndom k-labELsets(Ensemble method) \cite{Tsoumakas2011random} by using the J48 decision tree algorithm.
+
+%\note{The number of multi-label class values explode with the number of label dimensions.  This raises the question of scaling over many labels.}
+
+\subsubsection{Binary Relevance method with Naive Bayes}
+The strategy of problem transformation is to use the one-against-all strategy by converting the multi-label problem into several binary classification problems. This approach is known as the binary relevance method (BR)~\cite{read2011classifier}. A method closely related to the BR method is the Classifier Chain method (CC) proposed by Read et al. \cite{read2011classifier}. This method involves~$Q$ binary classifiers linked along a chain. BR transforms any multi-label problem into one binary problem for each label. 
+
+%% \add{\note{moved this paragraph here but needs to be double checked.}\label{notea}}
+Hence this method trains $|L|$ binary classifiers~$C_1,...,C_{L}$. Each classifier~$C_j$ is responsible for predicting the~$0/1$ association for each corresponding label~$L_j \in L$.\\
+
+BR with Naive Bayes (NB) method makes NB classifiers linked in a chain, such that the classifier for~$l_{i}$ in the chain considers the classes predicted~$l_1,l_2,...,l_{i-1}$ from the previous classifiers as additional attributes. Thus, the feature vector for each binary classifier is extended with the class values (labels) of all previous classifiers in the chain. Each classifier in the chain is trained to learn the association of label~$L_i$
+given the features augmented with all previous class labels in the chain, $ C_1;C_2;C_3;...;C_{|L|}$. At classification time, the process starts at~$C_1$, and propagates the predicted classes along   the   chain   such   that   for~$C_i$ it   computes: 
+\begin{equation}
+P(l_i)= \arg \max_{l_i} P(l_i|x,l_1,l_2,...,l_{i-1}) 
+\end{equation}
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=8cm]{graph/BR.pdf}
+  \caption{An example of the classification process of Binary Relevarnce method}\label{fig:BR}
+\end{figure}
+
+  Figure \ref{fig:BR} show how the BR method work in its classification. The chain of classifiers are builded and each classifier are correlated with their previous classifiers. Output from previous classifiers are also take into account as features in current classification. So, the correlation between each label (or skill) are also considered in classification. In Figure \ref{fig:BR}, data with 3 labels are going to be predicted, BR method build a classifer chain, $C_{1},C_{2}$and$C_{3}$.At the start of the chain, $C_{1}$ take all features $x$ into consideration and predict $L_{1}$. After getting result $l_{1}$ from $C_{1}$. $C_{2}$ start to predict $L_{2}$ by using $x$ and $l_{1}$ predicted by $C_{1}$. For predicting third label $L_{3}$, $C_{3}$  take $x,l_{1}$ and $l_{2}$ as features.   
+ %\includegraphics[width=\textwidth,height=5cm,keepaspectratio]{graph/BR.pdf}
+
+\subsubsection{RAndom k-labELsets with J48}
+The ensemble methods for multi-label learning are developed on top of the common problem transformation or algorithm adaptation methods. The most well known problem transformation ensembles are the RAndom k-labELsets (RAkEL) system by Tsoumakas et al.~\cite{Tsoumakas2011random}. RAkEL constructs each base classifier by considering a small random subset of labels .It decompose all labels $L$  with size $k$ into $m$ random subsets of labels set and trains a label power-set classifier
+using each set of labels. Let the term $L^k$ denote the set of all distinct k-labelsets of $L$.
+The size of $L^k$ is given by the binomial coefficient:$|L^k| =(^i_k)$. Given a size of labelsets $k$ over set of $i$ labels and a number of desired classifiers $m ≤ |L^k|$, RAkEL initially selects $m$ k-labelsets $R_j , j = 1 . . . m$ from the set $L^k$ via random sampling without replacement.  Then RAkEL learns m multi-label classifiers $C_j , j = 1 . . . m$ using LP. For the prediction, each classifier provides binary predictions for each label set. Subsequently,It  determines the final set of labels for a given example by using a simple voting process. It calculates the mean of these predictions for labels 
+from each classifier $C$ and outputs a final positive decision if it is greater than a 0.5 threshold. This intuitive threshold corresponds to the majority voting rule for the fusion of classifier decisions. It has been used for deriving a final decision in the problem transformation methods. 
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=8cm]{graph/RAKEL.pdf}
+  \caption{An example of the classification process of Random k-Labelsets method}\label{fig:RAKEL}
+\end{figure}
+
+The classification process of RAkEL is given in Figure \ref{fig:RAKEL}, with user-specified parameters:  k=2 (size of labelsets). In this way, the proposed algorithm aims to take into account label correlations using single-label classifiers that are applied on subtasks with a manageable number of labels and adequate number of examples per label. In this experiment we use the  J48 classifier, an optimized  implementation of the  C4.5 or improved version of the  C4.5. J48 constructs a Decision tree as an output.  
+
+
+In Figure \ref{fig:RAKEL}, all possible combination of labels are made over three labels $\{L_1,L_2,L_3\} \in L$. Those subsets are named as $\{S_1,S_2\}$,$\{S_2,S_3\}$ and $\{S_1,S_3\}$. Then build the classifier $\{C_1,C_2,C_3\}$ over these three subsets. each classifer predits the labels in each subsets independtly. After getting reuslts from each classifer, simple voting is performed according to the vote or reuslts form classifers.    
+
+
+
+%\note{Please expand the sections on RAkEL and Binary Relevance with more details and maybe examples.  They are at the heart of the proposal.}
+
+\section{Empirical Study}
+
+ In this research, we are going to compare the our porposed methods with three data driven techniques\cite{chiu2013statistical,de2008empirically,de2009dina,desmarais2013matrix} in synthetic data and also do comparison on ensemple techniques applied with traditional classifiers (Classification Tree, Boosted Classification Tree, Regression Tree, Boosted Regression Tree) proposed in\cite{desmarais2015combining} in real data. We relied on the CDM \cite{CDM} and NPCD package which provided both the code for three basic data driven techniques and the data, rpart packages for traditional classification and mulan \cite{Tsoumakas2010MLD} for multi-label classification. 
+  
+ We use synthetic data generated from 1000 permuted matrices for training  and use real data for testing. The procedure for data generation of training and testing is shown in Figure~\ref{fig:DG}. The general idea is to introduce a perturbation in a Q-matrix and to run the refinement algorithms on the perturbated matrix to validate whether the perturbation is identified where false perturbations (false alarms) are introduced. Given that the Q-matrices, we generate the synthetic data, this provide the ground truth to do the training.  Noises are introduced to make the data closer to real data and we use the original ratio of 0/1 in the perturbated matrix to create the 1000~permutations. In this experiment, we explored only a single cell perturbations for training model and where test with both synthetic and real data (where real data was perturbated ranging from 1 to 10 cells).
+Next, we follow the approach in Figure \ref{fig:RP}, a multi-label classification algorithms are used for the predicting all skills of an item at once. 
+\begin{figure}
+  \centering
+    \includegraphics[width=100mm ,scale=0.5]{graph/DG.pdf}
+  \caption{Data Generation Procedure of each Q-Matrix~$QM_i$}  \label{fig:DG}
+\end{figure}
+ 
+\subsection{Data}
+For the sake of comparison, we use the same datasets as the ones used in Desmarais et al.\ (2015)~\cite{tatsuoka1983rule,desmarais2015combining}. It is a well known data set in
+fraction algebra from Tatsuoka's work (Tatsuoka, 1984)\cite{tatsuoka1983rule}. It consists 3 expert-driven Q-matrices and one SVD driven Q-matrix with a same data set.These allow us to analyze possibility of different models (Q-matrices) over the same data source.Table~\ref{tab:qm} provides the basic information and source of each dataset.   
+
+
+
+
+
+
+\begin{table}[h] 
+\begin{center}
+  \caption{Q-matrix for validation \& explanation of category}\label{tab:qm}
+  \begin{tabular}{|ccccp{4cm}<{\raggedright}|}
+  \hline
+  \toprule
+\multirow{2}{*}{Q-Matrices} & \multicolumn{3}{c}{Number of} & \multirow{2}{*|}{Description} \\
+  \cline{2-4}
+  & Skills &  Items & \multicolumn{1}{c}{Cases} & \\
+  \midrule
+QM1 & 3 & 11 & 536 & {Expert driven from \cite{henson2009defining} } \\
+	\hline
+QM2 & 5 & 11 & 536 & {Expert driven from \cite{de2008empirically} } \\  
+ 	\hline
+QM3 & 3 & 11 & 536 & {Expert driven from \cite{CDM}} \\  
+  	\hline 
+QM4 & 3 & 11 & 536 & {Data driven, SVD based} \\  
+  	\hline
+  	\end{tabular}  
+\end{center}	
+\end{table}
+
+
+
+
+
+\subsection{Error metric}\label{sec:eval-meas-princ}
+
+%% \add{\note{is this notation consistent with the above (note~\ref{notea})?}}
+The evaluation of methods for multi-label data requires different metrics than those used in the case of single label data. For the definitions of these metrics, we will consider an evaluation data set of multi-label examples~$(x_i ,Y_i ), i = 1...m, $ where~$ Y_i \subseteq L~$ is the set of true labels and~$ Z_i~$ is the set of predicted labels. This section presents some metrics: Hamming loss, Accuracy and  F-measure \cite{Tsoumakas2010MLD} that will be used in this experiment to
+assess the performance of the different algorithms. 
+%\item Ranking based measurement: are measured based on the ranking scores they received and how far with %respect to the ground truth of multi-label data. It concludes with a subsection on measures that take into %account label hierarchy of the existing label sets. The highest rank is received by the most relevant %label, while the least relevant one, receives the lowest rank.
+
+
+%% MD: to validate by Sein Minn
+%% \subsubsection{Example based metric}
+%% %% \add{\note{Single section here}}
+%% Example based metrics are calculated over all examples of the evaluation data set, that based on the average differences of the actual and the predicted sets of labels.
+
+\subsubsection{Hamming Loss} a measure of how many times an instance label set is misclassified, i.e. a label not belonging to the instance is predicted or a label belonging to the instance is not predicted. The performance is perfect when~$Hamming Loss=0$; the smaller the value of~$Hamming Loss$, the better the performance:
+\begin{equation} 
+ Hamming Loss= \frac{1}{m}\sum_{i=1}^{m}  \frac{|Z_i\Delta Y_i|}{M}
+\end{equation}
+where~$\Delta$ stands for the symmetric difference between two label sets. which is the theoretic equivalent of the exclusive disjunction (XOR operation) in Boolean logic for sets.
+\subsubsection{Accuracy}
+ Accuracy is to calculate the accuracy of vector of labels is truly classified. $ Accuracy$ is defined as follows:
+\begin{equation} 
+ Accuracy= \frac{1}{m}\sum_{i=1}^{m}  I(Z_i = Y_i)
+\end{equation}
+\subsubsection{F-score} F-score is calculated based on the average differences of the actual and the predicted sets of labels over all examples of the evaluation data set. The performance is perfect when~$F-score = 1$; the bigger the value ,the better the performance:
+\begin{equation} 
+ F-score= \frac{1}{m}\sum_{i=1}^{m} \frac{2|Y_i \cap Z_i|}{|Z_i|+|Y_i|}
+\end{equation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Result}
+
+The experimental results are reported in Tables [\ref{ref:Syn_HL},\ref{ref:Syn_SA},\ref{ref:Syn_FM}] for synthetic data, and in  Figures [\ref{fig:HLforReal},\ref{fig:SAforReal},\ref{fig:FMforReal}] for real data. Four variations of the two multi-label approaches are reported for both real and synthetic data (BR and RAkEL).
+\subsection{Result for synthetic data}
+
+
+
+\begin {table}[h]
+\scriptsize
+\centering
+\begin{tabular}{c|c|c|c|c|c|c|c|c|c}	
+	\hline\hline	
+	
+	
+
+	
+QM  &  MinRSS  &  MaxDiff  &  ALSC  &  CT  &  BCT  &  RT  &  BRT  &  BR  &  RAkEL \\ \hline
+qm1  & 0.01 & 0.02 & 0.01 & 0.00 & 0.00 & 0.00 & 0.01 & 0.00 & 0.00 \\
+qm2  & 0.02 & 0.04 & 0.06 & 0.01 & 0.01 & 0.01 & 0.02 & 0.01 & 0.01 \\
+qm3  & 0.00 & 0.02 & 0.01 & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 & 0.00 \\
+qm4  & 0.01 & 0.02 & 0.01 & 0.01 & 0.00 & 0.01 & 0.01 & 0.01 & 0.00 \\
+ \hline\hline
+\end{tabular}
+\caption {Hamming Loss result of Synthetic data (single perturbation)} \label{ref:Syn_HL} 
+\end{table}
+
+
+
+
+\begin {table}[h]
+\scriptsize
+\centering
+\begin{tabular}{c|c|c|c|c|c|c|c|c|c}	
+	\hline\hline	
+QM & MinRSS & MaxDiff & ALSC & CT & BCT & RT & BRT & BR & RAkEL \\ \hline
+qm1 & 0.98 & 0.95 & 0.97 & 1.00 & 1.00 & 1.00 & 0.98 & 0.99 & 0.99 \\
+qm2 &0.90 & 0.83 &0.72 & 0.94 & 0.94 & 0.94 & 0.89 & 0.94 & 0.97 \\
+qm3 & 0.99 & 0.96 & 0.99 & 0.99 & 0.99 & 0.99 & 0.99 & 1.00 & 1.00  \\
+qm4 & 0.98 & 0.94 & 0.98 & 0.98 & 0.99 & 0.98 & 0.98 & 0.98 & 0.99	\\ 
+\hline\hline
+\end{tabular}
+\caption {Accuracy result of Synthetic data (single perturbation)} \label{ref:Syn_SA} 
+\end{table}
+
+
+
+\begin {table}[h]
+\scriptsize
+\centering
+\begin{tabular}{c|c|c|c|c|c|c|c|c|c}	
+	\hline\hline	
+QM & MinRSS & MaxDiff & ALSC & CT & BCT & RT & BRT & BR & RAkEL \\ \hline
+qm1 & 0.99 & 0.98 & 0.99 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+qm2 & 0.98 & 0.98 & 0.96 & 0.99 & 0.99 & 0.99 & 0.98 & 0.99 & 1.00 \\
+qm3 & 1.00 & 0.98 & 0.99 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+qm4 & 0.99 & 0.98 & 0.99 & 0.99 & 0.99 & 0.99 & 0.99 & 0.99 & 1.00 \\
+\hline\hline
+\end{tabular}
+\caption {F-measure result of Synthetic data (single perturbation)} \label{ref:Syn_FM}
+%\note{Because these numbers are very close to 1, they should be transformed on a logit scale.}
+\end{table}
+
+All experiments were done with 10 fold cross validation.
+
+ 
+ For synthetic data, a single cell is perturbed. We can see from Tables [\ref{ref:Syn_HL},\ref{ref:Syn_SA},\ref{ref:Syn_FM}] that most of multi-label skill refinement methods can recover 97\% for all
+Q-matrices and even the performance reaches 100\% in terms of accuracy
+and F-measure. The standard deviations of all values are less than 0.01, so we do not mention in here. Clearly, all methods using multi-label refinement algorithms perform much better than any single method and the results are also substantially better than those of the single-cell decision tree method reported in~\cite{desmarais2015combining}. In our previous method, all skills are independently predicted by each classifier. In this method, we also consider correlation between skills. It provides more reliable q-vectors by taking relationship between skills into account in classification.%\note{how do we konw that since for synthetic data it is not reported?  Furthermore, it does not seem that much better for real data results, and an explanation would be required to explain why the methods of this year's and last year's EDM papers, RT, etc., do not perorm better than the best of the 3 basic methods.}. Althoght all these methods in synthetic data got nearly close results, but it have significant different when q-vector contains more skills.(for eg., QM2 has 5 skills while others have only 3 skills. In this case, the porposed method singnificantly outperform than other methods).
+%\note{I note that the methodology to perturbate and validate the Q-matrices is not explained, or did I miss it?}
+
+
+\subsection{Result for real data}
+For real data, multiple perturbations are introduced and the results are shown as figures to better visualize the trends as a function of the number of perturbations.   A logit scale is used which can be considered a good estimate of the relative remaining error on a scale of~$[0,1]$ (for e.g.., it displays a relative error reduction in accuracy from~0.90 to~0.95 as similar to the reduction from~0.99 to~0.995). The black lines show the results of the three individual refinement algorithms, and the coloured lines show the multi-label algorithms results.  
+
+As expected, the performance of all methods decline with the number of perturbations. The proposed methods show more significant performance than three data driven method along with the number of perturbation. RAkEL shows the best performances for expert driven Q-matrices in general, but not that significant for SVD driven Q-matrix. In QM2, RAkEL outperforms 67\% better than MaxDiff (best among three data driven algorithms) and 19\% better than BRT (best among compared methods except BR) in term of accuracy when it reaches to 10 cells perturbation.   However, the results for QM3 and QM4 shows that the MaxDiff method has better performance than proposed methods up to 3 or 4 perturbations, but proposed methods can recover the QMs more effectively and accurately when it contains more errors in those QMs.
+
+
+
+\begin{figure}
+  \centering
+    \includegraphics[width=100 mm ,scale=0.25]{graph/HL.pdf}
+  \caption{Real data: Logit value of Hamming loss as a function of the number of perturbations}\label{fig:HLforReal}
+\end{figure}
+
+\begin{figure}
+  \centering
+    \includegraphics[width=100 mm ,scale=0.25]{graph/SA.pdf}
+  \caption{Real data: Logit value of Accuracy as a function of the number of perturbations}\label{fig:SAforReal}
+\end{figure}
+
+\begin{figure}
+  \centering
+    \includegraphics[width=100 mm ,scale=0.25]{graph/FM.pdf}
+    \caption{Real data: Logit value of F-measure as a function of the number of perturbations}\label{fig:FMforReal}
+\end{figure}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+We proposed multi-skill refinement method to improve the performance of traditional  algorithms on Q-matrix validation problem. In this proposal, we apply ensemble technique that based on multi-lable classification to choose the correct skills in q-vectors by using the proposed q-vectors from three data driven techniques as features. In where, classification model was trained by vast amount of permutated Q-matrices produced synthetically. This model provides the decision about whether what skills in q-vectors are correctly specified and refined simultaneously (if necessary)  by accessing the results proposed by three data driven methods as features for real data. It can be seen as to improving the performance of Q-matrix refinement algorithms by using a supervised model trained by huge amount of all possible q-vectors form permutated  Q-matrices. The results reveal the proposed method provide better performance than existing algorithms and it is more significant when Q-matrices contain more errors. Otherwise, the proposed methods are more likely to outperform when dealing Q-matrices with larger number of skills.  
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}[h]
+  \raggedright
+    \includegraphics[width=160 mm ,scale=0.25]{graph/grrant.pdf}
+    \caption{Research Plan for Ph.D.}\label{fig:PhDplan}
+\end{figure}
+
+\section{Future Work}
+
+In this proposal, we are only dealing with Q-matrix that show what skill are required for what kind of tasks by using binary values. In future, we are going to deal Q-matrices refinement with various optimization techniuqes.Besides,we are only dealing with the static data that is the snapshot data extracted from student examination in this experiment. we are going to deal with dynamic data that is extracted form tutoring system. In where, students were asked the specific questions several times and their performance would be improved when the students learn skills required according to time period. We are going to dealing with such data that change over time. We are passionate about learning how a student learn their skills required for their tasks according to time, their learning rate and recommending tasks to students according to their required skills.  
+
+\section{Appendix}
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=75 mm ,scale=0.27]{graph/old-SA.png}
+  \caption{Real data QM2: Logit value of Accuracy as a function of the number of perturbations without data filtering}\label{fig:oldSAforReal}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=75 mm ,scale=0.27]{graph/m3-SA.png}
+  \caption{Real data QM2: Logit value of Accuracy as a function of the number of perturbations with data filtering}\label{fig:m3SAforReal}
+\end{figure}
+
+
+\pagebreak
+
+\bibliographystyle{apacite}
+\bibliography{Proposal}
+\end{document}
